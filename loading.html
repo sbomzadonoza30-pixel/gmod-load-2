@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Loading Screen</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+        .slideshow {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1000ms ease-in-out; 
+        }
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* === БЛОК ЛОГОТИПА И НАЗВАНИЯ СЕРВЕРА === */
+        .server-header {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%); /* Выравнивание строго по центру */
+            z-index: 999;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Стиль для картинки-логотипа */
+        .server-logo {
+            max-width: 400px; /* Максимальная ширина логотипа */
+            max-height: 150px; /* Максимальная высота */
+            object-fit: contain;
+            /* Эффект легкой тени под логотипом, чтобы он не сливался с фоном */
+            filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.7)); 
+        }
+
+        /* Стиль для текстового названия (если картинки нет) */
+        .server-name-text {
+            color: #fff;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(40, 167, 69, 0.7), 0 4px 8px rgba(0,0,0,0.8); /* Зеленоватое свечение */
+            margin: 0;
+        }
+
+        /* === ИНТЕРФЕЙС ПЛЕЕРА === */
+        .music-player {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            z-index: 999;
+            background: rgba(20, 20, 20, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            width: 280px;
+        }
+        .track-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ececec;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .player-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+        .player-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .volume-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 10px;
+        }
+        .volume-box span {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .volume-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            cursor: pointer;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ: ЛОГОТИП И НАЗВАНИЕ СЕРВЕРА -->
+    <div class="server-header">
+        <!-- 1. Картинка-логотип (положите её в папку images и укажите имя, например logo.png) -->
+        <!-- Если проверяете в браузере, оставьте "images/logo.png". Для GMod допишите asset://... -->
+        <img src="images/logo.png" alt="" class="server-logo" onerror="this.style.display='none'">
+        
+        <!-- 2. Текст названия (можете изменить текст внутри тега h1 на свой) -->
+        <h1 class="server-name-text">$WINOGRAD</h1>
+    </div>
+
+    <!-- СКРЫТЫЙ АУДИОПЛЕЕР -->
+    <audio id="bgm" autoplay></audio>
+    
+    <!-- ИНТЕРФЕЙС ПЛЕЕРА -->
+    <div class="music-player" id="player-panel">
+        <div class="track-title" id="track-name">Загрузка музыки...</div>
+        <div class="controls">
+            <button class="player-btn" onclick="prevTrack()">⏮ Назад</button>
+            <button class="player-btn" onclick="nextTrack()">⏭ Вперед</button>
+        </div>
+        <div class="volume-box">
+            <span>🔈</span>
+            <input type="range" class="volume-slider" id="volume-control" min="0" max="100" value="30" oninput="changeVolume(this.value)">
+            <span>🔊</span>
+        </div>
+    </div>
+    
+    <!-- КОНТЕЙНЕР ДЛЯ СЛАЙД-ШОУ -->
+    <div class="slideshow" id="slideshow-container"></div>
+
+    <script>
+        // === Список ваших картинок ===
+        const images = [
+            "images/1.jpg",
+            "images/2.jpg",
+            "images/3.jpg",
+            "images/4.jpg",
+            "images/5.jpg",
+            "images/6.jpg",
+            "images/7.jpg",
+            "images/8.jpg",
+            "images/9.jpg",
+            "images/10.jpg",
+            "images/11.jpg",
+            "images/12.jpg",
+            "images/13.jpg",
+            "images/14.jpg",
+            "images/15.jpg",
+            "images/16.jpg",
+            "images/17.jpg",
+            "images/18.jpg",
+            "images/19.jpg",
+            "images/20.jpg",
+            "images/21.jpg",
+            "images/22.jpg"
+        ];
+
+        // === Список вашей музыки ===
+        const songs = [
+            "sounds/Radiohead_Kid_a_Idioteque.mp3",
+            "sounds/Where_is_my_mind.mp3",
+            "sounds/Where's_your_head at.mp3"
+            "sounds/v_kraiy_mognoli.mp3"
+        ];
+
+        // --- ЛОГИКА СЛАЙД-ШОУ ---
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        const shuffledImages = shuffle([...images]);
+        const container = document.getElementById('slideshow-container');
+
+        if (shuffledImages.length > 0) {
+            shuffledImages.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = 'slide' + (index === 0 ? ' active' : '');
+                div.style.backgroundImage = "url('" + url + "')";
+                container.appendChild(div);
+            });
+        }
+
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+        if (slides.length > 1) {
+            setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 3000);
+        }
+
+        // --- ЛОГИКА ПЛЕЕРА ---
+        const player = document.getElementById('bgm');
+        const trackName = document.getElementById('track-name');
+        
+        let shuffledSongs = shuffle([...songs]);
+        let currentSongIndex = 0;
+
+        player.volume = 0.3; 
+
+        if (songs.length > 0) {
+            playTrack(currentSongIndex);
+            player.onended = () => { nextTrack(); };
+        }
+
+        function playTrack(index) {
+            const trackPath = shuffledSongs[index];
+            player.src = trackPath;
+            const cleanName = trackPath.replace("sounds/", "");
+            trackName.innerHTML = "🎵 " + cleanName;
+            player.play().catch(err => {
+                trackName.innerHTML = "⏸ Нажмите на экран для звука";
+            });
+        }
+
+        function nextTrack() {
+            currentSongIndex = (currentSongIndex + 1) % shuffledSongs.length;
+            playTrack(currentSongIndex);
+        }
+
+        function prevTrack() {
+            currentSongIndex = (currentSongIndex - 1 + shuffledSongs.length) % shuffledSongs.length;
+            playTrack(currentSongIndex);
+        }
+
+        function changeVolume(value) {
+            player.volume = value / 100;
+        }
+
+        document.body.addEventListener('click', () => {
+            if (player.paused && player.src) {
+                player.play();
+                const trackPath = shuffledSongs[currentSongIndex];
+                trackName.innerHTML = "🎵 " + trackPath.replace("sounds/", "");
+            }
+        });
+    </script>
+
+</body>
+</html>
